@@ -4,44 +4,79 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarColors
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.example.androidpractice.content.BottomNavBar
+import com.example.androidpractice.content.ListActivityScreen
+import com.example.androidpractice.content.NavigationGraph
+import com.example.androidpractice.content.NavigationRoutes
 import com.example.androidpractice.ui.theme.AndroidPracticeTheme
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             AndroidPracticeTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
+                val navController: NavHostController = rememberNavController()
+                var buttonsVisible by remember { mutableStateOf(true) }
+
+                Scaffold(modifier = Modifier.fillMaxSize(),
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                                val currentDestination = navBackStackEntry?.destination?.route
+                                Text(routeTranslation(currentDestination.toString())
+                                )
+                            },
+                            colors = TopAppBarColors(Color(0xFF81A681),
+                                Color(0xFF81A681),
+                                Color(0xFFFFFFFF),
+                                Color(0xFFFFFFFF),
+                                Color(0xFFFFFFFF))
+                        )
+                    },
+                    bottomBar = {
+                        if (buttonsVisible)
+                        {
+                            BottomNavBar(navController = navController,
+                                state = buttonsVisible,
+                                modifier = Modifier
+                            )
+                        }
+                    }) { innerPadding ->
+                    Box(
                         modifier = Modifier.padding(innerPadding)
-                    )
+                    ) {
+                        NavigationGraph(navController)
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AndroidPracticeTheme {
-        Greeting("Android")
+fun routeTranslation(route: String): String {
+    when(route){
+        "home" -> return "Начальная страница"
+        "list" -> return "Список"
     }
+    return "Неизвестная страница"
 }
