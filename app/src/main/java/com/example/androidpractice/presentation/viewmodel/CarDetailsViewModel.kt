@@ -7,6 +7,7 @@ import com.example.androidpractice.domain.usecase.GetCarUseCase
 import com.example.androidpractice.presentation.ui.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class CarDetailsViewModel(
@@ -14,7 +15,7 @@ class CarDetailsViewModel(
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<UiState<Car>>(UiState.Loading)
-    val uiState: StateFlow<UiState<Car>> = _uiState
+    val uiState: StateFlow<UiState<Car>> = _uiState.asStateFlow();
 
     fun loadCar(model: String) {
         viewModelScope.launch {
