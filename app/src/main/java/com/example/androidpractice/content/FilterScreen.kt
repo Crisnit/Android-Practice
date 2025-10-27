@@ -1,5 +1,4 @@
 package com.example.androidpractice.content
-
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,7 +26,6 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterScreen(navController: NavHostController) {
@@ -40,12 +38,10 @@ fun FilterScreen(navController: NavHostController) {
     )
     val context = androidx.compose.ui.platform.LocalContext.current
     val dataStore: DataStore<Preferences> = AppModule.provideDataStore(context)
-
+    val filterCache = AppModule.filterCache
     var manufacturer by remember { mutableStateOf("") }
     var minYear by remember { mutableStateOf("") }
     var carClass by remember { mutableStateOf("") }
-
-    // Load saved filters
     LaunchedEffect(Unit) {
         runBlocking {
             val prefs = dataStore.data.first()
@@ -54,7 +50,6 @@ fun FilterScreen(navController: NavHostController) {
             carClass = prefs[PreferencesKeys.CAR_CLASS] ?: ""
         }
     }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -83,10 +78,24 @@ fun FilterScreen(navController: NavHostController) {
             onClick = {
                 runBlocking {
                     dataStore.edit { preferences ->
-                        preferences[PreferencesKeys.MANUFACTURER] = manufacturer
+                        if (manufacturer.isNotBlank()) {
+                            preferences[PreferencesKeys.MANUFACTURER] = manufacturer
+                        } else {
+                            preferences.remove(PreferencesKeys.MANUFACTURER)
+                        }
                         preferences[PreferencesKeys.MIN_YEAR] = minYear.toIntOrNull() ?: 0
-                        preferences[PreferencesKeys.CAR_CLASS] = carClass
+                        if (carClass.isNotBlank()) {
+                            preferences[PreferencesKeys.CAR_CLASS] = carClass
+                        } else {
+                            preferences.remove(PreferencesKeys.CAR_CLASS)
+                        }
                     }
+                    val prefs = dataStore.data.first()
+                    filterCache.setFiltersApplied(
+                        !prefs[PreferencesKeys.MANUFACTURER].isNullOrBlank() ||
+                                prefs[PreferencesKeys.MIN_YEAR] != 0 ||
+                                !prefs[PreferencesKeys.CAR_CLASS].isNullOrBlank()
+                    )
                 }
                 viewModel.loadCarsWithFilters(dataStore)
                 navController.popBackStack()

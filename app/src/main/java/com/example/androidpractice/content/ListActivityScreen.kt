@@ -1,4 +1,5 @@
 package com.example.androidpractice.content
+
 import android.content.Intent
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -27,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,6 +37,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.datastore.preferences.core.Preferences
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -43,6 +46,8 @@ import com.example.androidpractice.di.AppModule
 import com.example.androidpractice.presentation.ui.UiState
 import com.example.androidpractice.presentation.viewmodel.CarListViewModel
 import com.example.androidpractice.ui.theme.AndroidPracticeTheme
+import kotlinx.coroutines.flow.first
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListActivityScreen(navController: NavHostController) {
@@ -57,9 +62,18 @@ fun ListActivityScreen(navController: NavHostController) {
     val context = LocalContext.current
     val dataStore = AppModule.provideDataStore(context)
     val filterCache = AppModule.filterCache
-    LaunchedEffect(Unit) {
+
+    val dataStoreState by dataStore.data.collectAsState(initial = emptyMap<Preferences.Key<*>, Any?>())
+    LaunchedEffect(dataStoreState) {
+        val prefs = dataStore.data.first()
+        filterCache.setFiltersApplied(
+            !prefs[PreferencesKeys.MANUFACTURER].isNullOrBlank() ||
+                    prefs[PreferencesKeys.MIN_YEAR] != 0 ||
+                    !prefs[PreferencesKeys.CAR_CLASS].isNullOrBlank()
+        )
         viewModel.loadCarsWithFilters(dataStore)
     }
+
     AndroidPracticeTheme {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
@@ -68,12 +82,21 @@ fun ListActivityScreen(navController: NavHostController) {
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                IconButton(onClick = { navController.navigate("filters") }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Filter",
-                        tint = Color.Black
-                    )
+                Box {
+                    IconButton(onClick = { navController.navigate(NavigationRoutes.Filters.route) }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Filter",
+                            tint = Color.Black
+                        )
+                    }
+                    if (filterCache.hasFiltersApplied) {
+                        Badge(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(8.dp)
+                        )
+                    }
                 }
             }
             Box(modifier = Modifier.fillMaxWidth()) {
