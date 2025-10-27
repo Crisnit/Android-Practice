@@ -1,8 +1,6 @@
-package com.example.androidpractice.content
+package com.example.androidpractice.domain.model
 
-import androidx.compose.ui.graphics.ImageBitmap
-
-class ItemData (
+data class Car (
     val manufacturer: String,
     val model: String,
     val productionYears: String,
@@ -10,4 +8,4 @@ class ItemData (
     val powertrainLayout: String,
     val description: String,
     val imagePath: String
-    )
+)

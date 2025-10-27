@@ -8,7 +8,7 @@ import com.example.androidpractice.Home
 
 @Composable
 fun NavigationGraph (navController: NavHostController,) {
-    NavHost(navController, startDestination = NavigationRoutes.List.route) {
+    NavHost(navController, startDestination = NavigationRoutes.Home.route) {
         composable (NavigationRoutes.Home.route) {
             Home()
         }
