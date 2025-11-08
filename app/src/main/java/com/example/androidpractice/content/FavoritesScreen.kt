@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.androidpractice.di.AppModule
+import com.example.androidpractice.domain.model.Car
 import com.example.androidpractice.presentation.ui.UiState
 import com.example.androidpractice.presentation.viewmodel.FavoritesViewModel
 import com.example.androidpractice.ui.theme.AndroidPracticeTheme
@@ -45,10 +47,8 @@ fun FavoritesScreen() {
             }
         }
     )
-    val state = viewModel.uiState.collectAsState().value
-    LaunchedEffect(Unit) {
-        viewModel.loadFavorites()
-    }
+    val state by viewModel.uiState.collectAsState()
+
     AndroidPracticeTheme {
         when (state) {
             is UiState.Loading -> {
@@ -66,11 +66,11 @@ fun FavoritesScreen() {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Error: ${state.message}")
+                    Text("Error: ${(state as UiState.Error).message}")
                 }
             }
             is UiState.Success -> {
-                val itemsArray = state.data
+                val itemsArray = (state as UiState.Success<List<Car>>).data
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(0.dp),
                 ) {
