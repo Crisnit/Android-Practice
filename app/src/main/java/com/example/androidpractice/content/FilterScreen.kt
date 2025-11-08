@@ -43,7 +43,7 @@ fun FilterScreen(navController: NavHostController) {
     var minYear by remember { mutableStateOf("") }
     var carClass by remember { mutableStateOf("") }
     LaunchedEffect(Unit) {
-        runBlocking {
+        launch {
             val prefs = dataStore.data.first()
             manufacturer = prefs[PreferencesKeys.MANUFACTURER] ?: ""
             minYear = (prefs[PreferencesKeys.MIN_YEAR]?.toString() ?: "")
