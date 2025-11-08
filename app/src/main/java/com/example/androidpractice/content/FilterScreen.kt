@@ -8,48 +8,31 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.androidpractice.di.AppModule
-import com.example.androidpractice.presentation.viewmodel.CarListViewModel
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.LaunchedEffect
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
+import com.example.androidpractice.presentation.viewmodel.FilterViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilterScreen(navController: NavHostController) {
-    val viewModel = viewModel<CarListViewModel>(
+    val context = LocalContext.current
+    val viewModel = viewModel<FilterViewModel>(
         factory = object : androidx.lifecycle.ViewModelProvider.Factory {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return CarListViewModel(AppModule.getCarsUseCase) as T
+                return FilterViewModel(
+                    AppModule.provideDataStore(context),
+                    AppModule.filterCache
+                ) as T
             }
         }
     )
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val dataStore: DataStore<Preferences> = AppModule.provideDataStore(context)
-    val filterCache = AppModule.filterCache
-    var manufacturer by remember { mutableStateOf("") }
-    var minYear by remember { mutableStateOf("") }
-    var carClass by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
-        launch {
-            val prefs = dataStore.data.first()
-            manufacturer = prefs[PreferencesKeys.MANUFACTURER] ?: ""
-            minYear = (prefs[PreferencesKeys.MIN_YEAR]?.toString() ?: "")
-            carClass = prefs[PreferencesKeys.CAR_CLASS] ?: ""
-        }
-    }
+    val state by viewModel.uiState.collectAsState()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -57,47 +40,26 @@ fun FilterScreen(navController: NavHostController) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         OutlinedTextField(
-            value = manufacturer,
-            onValueChange = { manufacturer = it },
+            value = state.manufacturer,
+            onValueChange = { viewModel.updateManufacturer(it) },
             label = { Text("Manufacturer") },
             modifier = Modifier.padding(8.dp)
         )
         OutlinedTextField(
-            value = minYear,
-            onValueChange = { minYear = it },
+            value = state.minYear,
+            onValueChange = { viewModel.updateMinYear(it) },
             label = { Text("Min Year") },
             modifier = Modifier.padding(8.dp)
         )
         OutlinedTextField(
-            value = carClass,
-            onValueChange = { carClass = it },
+            value = state.carClass,
+            onValueChange = { viewModel.updateCarClass(it) },
             label = { Text("Car Class") },
             modifier = Modifier.padding(8.dp)
         )
         Button(
             onClick = {
-                runBlocking {
-                    dataStore.edit { preferences ->
-                        if (manufacturer.isNotBlank()) {
-                            preferences[PreferencesKeys.MANUFACTURER] = manufacturer
-                        } else {
-                            preferences.remove(PreferencesKeys.MANUFACTURER)
-                        }
-                        preferences[PreferencesKeys.MIN_YEAR] = minYear.toIntOrNull() ?: 0
-                        if (carClass.isNotBlank()) {
-                            preferences[PreferencesKeys.CAR_CLASS] = carClass
-                        } else {
-                            preferences.remove(PreferencesKeys.CAR_CLASS)
-                        }
-                    }
-                    val prefs = dataStore.data.first()
-                    filterCache.setFiltersApplied(
-                        !prefs[PreferencesKeys.MANUFACTURER].isNullOrBlank() ||
-                                prefs[PreferencesKeys.MIN_YEAR] != 0 ||
-                                !prefs[PreferencesKeys.CAR_CLASS].isNullOrBlank()
-                    )
-                }
-                viewModel.loadCarsWithFilters(dataStore)
+                viewModel.applyFilters()
                 navController.popBackStack()
             },
             modifier = Modifier.padding(top = 16.dp)
