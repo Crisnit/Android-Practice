@@ -32,13 +32,13 @@ class MainActivity : ComponentActivity() {
         setContent {
             AndroidPracticeTheme {
                 val navController: NavHostController = rememberNavController()
-                var buttonsVisible by remember { mutableStateOf(true) }
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination?.route
-                buttonsVisible = when (currentDestination) {
-                    NavigationRoutes.Filters.route -> false
-                    else -> true
-                }
+                val showBottomBar = currentDestination in listOf(
+                    NavigationRoutes.Home.route,
+                    NavigationRoutes.List.route,
+                    NavigationRoutes.Favorites.route,
+                )
                 Scaffold(modifier = Modifier.fillMaxSize(),
                     topBar = {
                         TopAppBar(
@@ -53,11 +53,8 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     bottomBar = {
-                        if (buttonsVisible) {
-                            BottomNavBar(navController = navController,
-                                state = buttonsVisible,
-                                modifier = Modifier
-                            )
+                        if (showBottomBar) {
+                            BottomNavBar(navController = navController, state = true)
                         }
                     }) { innerPadding ->
                     Box(
