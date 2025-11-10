@@ -20,5 +20,11 @@ fun NavigationGraph(navController: NavHostController) {
         composable(NavigationRoutes.Favorites.route) {
             FavoritesScreen()
         }
+        composable(NavigationRoutes.Profile.route) {
+            ProfileScreen(navController = navController)
+        }
+        composable(NavigationRoutes.EditProfile.route) {
+            EditProfileScreen(navController = navController)
+        }
     }
 }

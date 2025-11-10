@@ -38,6 +38,7 @@ class MainActivity : ComponentActivity() {
                     NavigationRoutes.Home.route,
                     NavigationRoutes.List.route,
                     NavigationRoutes.Favorites.route,
+                    NavigationRoutes.Profile.route
                 )
                 Scaffold(modifier = Modifier.fillMaxSize(),
                     topBar = {
@@ -73,6 +74,7 @@ fun routeTranslation(route: String): String {
         "list" -> return "Список"
         "filters" -> return "Фильтры"
         "favorites" -> return "Избранное"
+        "profile" -> return "Профиль"
     }
     return "Неизвестная страница"
 }
