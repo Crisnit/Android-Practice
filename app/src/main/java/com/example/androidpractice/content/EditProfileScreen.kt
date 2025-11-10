@@ -41,7 +41,6 @@ import com.example.androidpractice.di.AppModule
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.io.File
@@ -57,10 +56,9 @@ fun EditProfileScreen(navController: NavHostController) {
     var resumeUrl by remember { mutableStateOf("") }
     var avatarUri by remember { mutableStateOf<Uri?>(null) }
     var showImagePickerDialog by remember { mutableStateOf(false) }
-    var selectedSource by remember { mutableStateOf<String?>(null) }
-
-    val cameraUri = remember { FileProvider.getUriForFile(context, "${context.packageName}.provider", createTempFile(context)) }
-
+    var pendingGallery by remember { mutableStateOf(false) }
+    var pendingCamera by remember { mutableStateOf(false) }
+    var currentCameraUri by remember { mutableStateOf<Uri?>(null) }
 
     LaunchedEffect(Unit) {
         val prefs = dataStore.data.first()
@@ -70,42 +68,41 @@ fun EditProfileScreen(navController: NavHostController) {
         if (uriString.isNotEmpty()) avatarUri = uriString.toUri()
     }
 
+    val galleryPermission =
+        Manifest.permission.READ_MEDIA_IMAGES
+    val galleryPermissionState = rememberPermissionState(galleryPermission)
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
+
     val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { avatarUri = it }
     }
-
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) avatarUri = cameraUri
+        if (success) {
+            currentCameraUri?.let { avatarUri = it }
+        }
     }
 
-    val galleryPermission =
-        Manifest.permission.READ_MEDIA_IMAGES
-
-    val galleryPermissionState = rememberPermissionState(galleryPermission) { granted ->
-        if (granted && selectedSource == "gallery") galleryLauncher.launch("image/*")
-    }
-    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA) { granted ->
-        if (granted && selectedSource == "camera") cameraLauncher.launch(cameraUri)
-    }
-
-    LaunchedEffect(selectedSource, galleryPermissionState.status.isGranted, cameraPermissionState.status.isGranted) {
-        when (selectedSource) {
-            "gallery" -> {
-                if (!galleryPermissionState.status.isGranted && !galleryPermissionState.status.shouldShowRationale) {
-                    galleryPermissionState.launchPermissionRequest()
-                } else if (galleryPermissionState.status.isGranted) {
-                    galleryLauncher.launch("image/*")
-                    selectedSource = null
-                }
+    LaunchedEffect(galleryPermissionState.status) {
+        if (pendingGallery) {
+            if (galleryPermissionState.status.isGranted) {
+                galleryLauncher.launch("image/*")
             }
-            "camera" -> {
-                if (!cameraPermissionState.status.isGranted && !cameraPermissionState.status.shouldShowRationale) {
-                    cameraPermissionState.launchPermissionRequest()
-                } else if (cameraPermissionState.status.isGranted) {
-                    cameraLauncher.launch(cameraUri)
-                    selectedSource = null
-                }
+            pendingGallery = false
+        }
+    }
+
+    LaunchedEffect(cameraPermissionState.status) {
+        if (pendingCamera) {
+            if (cameraPermissionState.status.isGranted) {
+                val photoFile = createTempFile(context)
+                currentCameraUri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    photoFile
+                )
+                cameraLauncher.launch(currentCameraUri!!)
             }
+            pendingCamera = false
         }
     }
 
@@ -115,14 +112,30 @@ fun EditProfileScreen(navController: NavHostController) {
             title = { Text("Выберите источник") },
             confirmButton = {
                 TextButton(onClick = {
-                    selectedSource = "gallery"
                     showImagePickerDialog = false
+                    if (galleryPermissionState.status.isGranted) {
+                        galleryLauncher.launch("image/*")
+                    } else {
+                        galleryPermissionState.launchPermissionRequest()
+                        pendingGallery = true
+                    }
                 }) { Text("Галерея") }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    selectedSource = "camera"
                     showImagePickerDialog = false
+                    if (cameraPermissionState.status.isGranted) {
+                        val photoFile = createTempFile(context)
+                        currentCameraUri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.provider",
+                            photoFile
+                        )
+                        cameraLauncher.launch(currentCameraUri!!)
+                    } else {
+                        cameraPermissionState.launchPermissionRequest()
+                        pendingCamera = true
+                    }
                 }) { Text("Камера") }
             }
         )

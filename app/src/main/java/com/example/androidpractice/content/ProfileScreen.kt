@@ -62,6 +62,8 @@ fun ProfileScreen(navController: NavHostController) {
         .collectAsState(initial = ProfileData("", "", ""))
 
     var downloadId by remember { mutableStateOf<Long?>(null) }
+    var isReceiverRegistered by remember { mutableStateOf(false) }
+
     val downloadReceiver = remember {
         object : BroadcastReceiver() {
             @SuppressLint("Range")
@@ -87,21 +89,36 @@ fun ProfileScreen(navController: NavHostController) {
                         }
                     }
                     cursor.close()
-                    context.unregisterReceiver(this)
+                    if (isReceiverRegistered) {
+                        context.unregisterReceiver(this)
+                        isReceiverRegistered = false
+                    }
                 }
             }
         }
     }
 
     DisposableEffect(Unit) {
-        ContextCompat.registerReceiver(
-            context,
-            downloadReceiver,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            ContextCompat.RECEIVER_EXPORTED
-        )
+        try {
+            ContextCompat.registerReceiver(
+                context,
+                downloadReceiver,
+                IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            isReceiverRegistered = true
+        } catch (e: IllegalArgumentException) {
+            android.util.Log.e("ProfileScreen", "Failed to register receiver", e)
+        }
         onDispose {
-            context.unregisterReceiver(downloadReceiver)
+            if (isReceiverRegistered) {
+                try {
+                    context.unregisterReceiver(downloadReceiver)
+                } catch (e: IllegalArgumentException) {
+                    android.util.Log.e("ProfileScreen", "Failed to unregister receiver", e)
+                }
+                isReceiverRegistered = false
+            }
         }
     }
 
