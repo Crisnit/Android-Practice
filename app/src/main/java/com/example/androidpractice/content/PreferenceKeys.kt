@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 
 object PreferencesKeys {
+    val FAVORITE_PAIR_TIME = stringPreferencesKey("favorite_pair_time")
     val MANUFACTURER = stringPreferencesKey("manufacturer")
     val MIN_YEAR = intPreferencesKey("min_year")
     val CAR_CLASS = stringPreferencesKey("car_class")
