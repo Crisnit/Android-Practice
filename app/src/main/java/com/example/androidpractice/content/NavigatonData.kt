@@ -3,6 +3,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -57,6 +58,8 @@ sealed class NavigationRoutes(val route: String) {
     object List : NavigationRoutes("list")
     object Filters : NavigationRoutes("filters")
     object Favorites : NavigationRoutes("favorites")
+    object Profile : NavigationRoutes("profile")
+    object EditProfile : NavigationRoutes("edit_profile")
 }
 data class NavigationItem(
     val title: String,
@@ -79,6 +82,11 @@ object NavBarItems {
             title = "Favorites",
             icon = Icons.Filled.Favorite,
             route = "favorites"
+        ),
+        NavigationItem(
+            title = "Профиль",
+            icon = Icons.Filled.Person,
+            route = "profile"
         )
     )
 }

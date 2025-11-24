@@ -25,6 +25,7 @@ object AppModule {
 
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "filters")
 
+    private val Context.profileDataStore: DataStore<Preferences> by preferencesDataStore(name = "profile_preferences")
     private val retrofit: Retrofit = Retrofit.Builder()
         .baseUrl("https://cars-api-a7e69-default-rtdb.europe-west1.firebasedatabase.app/")
         .addConverterFactory(GsonConverterFactory.create())
@@ -52,6 +53,8 @@ object AppModule {
     fun provideAddFavoriteUseCase(repo: FavoritesRepository): AddFavoriteUseCase = AddFavoriteUseCase(repo)
     fun provideRemoveFavoriteUseCase(repo: FavoritesRepository): RemoveFavoriteUseCase = RemoveFavoriteUseCase(repo)
     fun provideGetFavoritesUseCase(repo: FavoritesRepository): GetFavoritesUseCase = GetFavoritesUseCase(repo)
+
+    fun provideProfileDataStore(context: Context): DataStore<Preferences> = context.profileDataStore
 
     val filterCache: FilterCache = FilterCache()
 }
