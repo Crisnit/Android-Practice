@@ -1,5 +1,4 @@
 package com.example.androidpractice.content
-
 import android.content.Intent
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -15,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,6 +29,7 @@ import androidx.compose.material3.TopAppBarColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,28 +44,33 @@ import com.example.androidpractice.di.AppModule
 import com.example.androidpractice.presentation.ui.UiState
 import com.example.androidpractice.presentation.viewmodel.CarDetailsViewModel
 import com.example.androidpractice.ui.theme.AndroidPracticeTheme
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailsActivityScreen(
     model: String,
     onBackClick: () -> Unit
 ) {
+    val context = LocalContext.current
     val viewModel = viewModel<CarDetailsViewModel>(
         factory = object : ViewModelProvider.Factory {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-                return CarDetailsViewModel(AppModule.getCarUseCase) as T
+                val db = AppModule.provideDatabase(context)
+                val favoritesRepo = AppModule.provideFavoritesRepository(db)
+                return CarDetailsViewModel(
+                    AppModule.getCarUseCase,
+                    AppModule.provideAddFavoriteUseCase(favoritesRepo),
+                    AppModule.provideRemoveFavoriteUseCase(favoritesRepo),
+                    AppModule.provideGetFavoritesUseCase(favoritesRepo)
+                ) as T
             }
         }
     )
     val state = viewModel.uiState.collectAsState().value
-
+    val isFavorite by viewModel.isFavorite.collectAsState()
     LaunchedEffect(model) {
         viewModel.loadCar(model)
     }
-
     AndroidPracticeTheme {
-        val context = LocalContext.current
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = {
@@ -95,11 +102,22 @@ fun DetailsActivityScreen(
                                         .putExtra(Intent.EXTRA_SUBJECT, "Карточка")
                                         .putExtra(Intent.EXTRA_TEXT, state.data.description)
                                     context.startActivity(intent)
-                                },
+                                }
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Share,
                                     contentDescription = "Share"
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    viewModel.toggleFavorite(state.data)
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                    contentDescription = "Favorite",
+                                    tint = if (isFavorite) Color.Red else Color.Black
                                 )
                             }
                         }
@@ -145,13 +163,9 @@ fun DetailsActivityScreen(
                             contentDescription = "Car image"
                         )
                         CarParameterText("Название автомобиля", "${carData.manufacturer} ${carData.model}")
-
                         CarParameterText("Годы производства", carData.productionYears)
-
                         CarParameterText("Класс", carData.carClass)
-
                         CarParameterText("Компоновка", carData.powertrainLayout)
-
                         CarParameterText("Описание", carData.description)
                     }
                 }
@@ -159,7 +173,6 @@ fun DetailsActivityScreen(
         }
     }
 }
-
 @Composable
 fun CarParameterText(title: String, paragraph: String) {
     Column {

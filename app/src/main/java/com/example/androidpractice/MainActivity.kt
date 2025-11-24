@@ -1,5 +1,4 @@
 package com.example.androidpractice
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,11 +21,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.androidpractice.content.BottomNavBar
-import com.example.androidpractice.content.ListActivityScreen
 import com.example.androidpractice.content.NavigationGraph
 import com.example.androidpractice.content.NavigationRoutes
 import com.example.androidpractice.ui.theme.AndroidPracticeTheme
-
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,16 +32,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             AndroidPracticeTheme {
                 val navController: NavHostController = rememberNavController()
-                var buttonsVisible by remember { mutableStateOf(true) }
-
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentDestination = navBackStackEntry?.destination?.route
+                val showBottomBar = currentDestination in listOf(
+                    NavigationRoutes.Home.route,
+                    NavigationRoutes.List.route,
+                    NavigationRoutes.Favorites.route,
+                )
                 Scaffold(modifier = Modifier.fillMaxSize(),
                     topBar = {
                         TopAppBar(
                             title = {
-                                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                                val currentDestination = navBackStackEntry?.destination?.route
-                                Text(routeTranslation(currentDestination.toString())
-                                )
+                                Text(routeTranslation(currentDestination.toString()))
                             },
                             colors = TopAppBarColors(Color(0xFF81A681),
                                 Color(0xFF81A681),
@@ -54,12 +53,8 @@ class MainActivity : ComponentActivity() {
                         )
                     },
                     bottomBar = {
-                        if (buttonsVisible)
-                        {
-                            BottomNavBar(navController = navController,
-                                state = buttonsVisible,
-                                modifier = Modifier
-                            )
+                        if (showBottomBar) {
+                            BottomNavBar(navController = navController, state = true)
                         }
                     }) { innerPadding ->
                     Box(
@@ -72,11 +67,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
-
 fun routeTranslation(route: String): String {
     when(route){
         "home" -> return "Начальная страница"
         "list" -> return "Список"
+        "filters" -> return "Фильтры"
+        "favorites" -> return "Избранное"
     }
     return "Неизвестная страница"
 }
